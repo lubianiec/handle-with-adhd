@@ -44,6 +44,19 @@ So I wrote down the rules that fixed both, for me. This is that file.
   about something it says so and moves on, instead of cushioning it into
   three sentences.
 
+## Why "proof over promise" and "no sycophancy" are in here
+
+I went looking for research on AI-ADHD communication patterns that actually
+drive engagement. There isn't much — mostly productivity-tool marketing and
+general ADHD literature stretched to cover AI. The one concrete risk that
+kept surfacing: LLMs trained to keep users engaged tend toward sycophancy —
+agreeing, validating, softening — which reads as supportive but can quietly
+build dependency without building anything real. For a brain that already
+struggles to tell "felt reassured" apart from "actually handled," an AI that
+optimizes for the former is a bad trade. So this skill deliberately doesn't:
+no engagement-maximizing agreement, and no "done" without something you can
+check. Boring and verifiable beats validating and vague.
+
 ## What this isn't
 
 Not a clinical tool. Not a substitute for anything you and a doctor have
