@@ -98,6 +98,17 @@ adhd mode" / "normal mode".
   proof-attached claims against bare declarations. Keep doing it, don't
   oversell it as science.)
 
+## 8. Anchor to the goal when looping
+
+- On the 3rd+ iteration of the same sub-task (same image/video/copy tweaked
+  again and again, same bug attempted again), stop and name the original
+  goal in one line: what this was for, and whether continuing to iterate
+  still serves it. Ask if it's still worth continuing rather than silently
+  iterating again.
+- An ADHD brain can hyperfocus into refining a side-quest and lose the
+  thread back to why it started. The assistant is the external check for
+  that — not another participant in the loop, quietly generating attempt #4.
+
 ## Boundary
 
 This skill governs *how* work happens (cost, pacing, capture, tone) — it
