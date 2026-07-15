@@ -1,0 +1,361 @@
+<title>Handle with ADHD — a Claude Code skill</title>
+<style>
+  :root {
+    --bg: #1c1c1e;
+    --surface: #232325;
+    --surface-2: #2a2a2c;
+    --border: #35353833;
+    --ink: #ededef;
+    --ink-dim: #9a9a9e;
+    --ink-faint: #6c6c70;
+    --accent: #f2994a;
+    --accent-dim: #f2994a22;
+    --accent-ink: #2c1c0f;
+    --mono: ui-monospace, "SF Mono", "Menlo", "Cascadia Code", Consolas, monospace;
+    --sans: -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  }
+  :root[data-theme="light"] {
+    --bg: #f3ede4;
+    --surface: #ffffff;
+    --surface-2: #eee6d8;
+    --border: #d8cdb888;
+    --ink: #241f18;
+    --ink-dim: #6b6357;
+    --ink-faint: #a49a87;
+    --accent: #c96f1f;
+    --accent-dim: #c96f1f1a;
+    --accent-ink: #fff6ea;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f3ede4; --surface: #ffffff; --surface-2: #eee6d8; --border: #d8cdb888;
+      --ink: #241f18; --ink-dim: #6b6357; --ink-faint: #a49a87;
+      --accent: #c96f1f; --accent-dim: #c96f1f1a; --accent-ink: #fff6ea;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--accent-dim); color: var(--accent); }
+  a { color: inherit; }
+
+  /* ---------- persistent chrome: top bar, bottom bar, right rail ---------- */
+  .chrome-top, .chrome-bottom {
+    position: fixed; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em;
+    pointer-events: none;
+  }
+  .chrome-top { top: 0; }
+  .chrome-bottom { bottom: 0; }
+  .chrome-top > *, .chrome-bottom > * { pointer-events: auto; }
+  .wordmark { font-weight: 700; letter-spacing: 0.02em; font-family: var(--sans); }
+  .chrome-desc { color: var(--ink-dim); max-width: 34ch; text-align: center; display: none; }
+  @media (min-width: 860px) { .chrome-desc { display: block; } }
+  .chrome-nav { display: flex; gap: 18px; align-items: center; }
+  .chrome-nav a { text-decoration: none; color: var(--ink-faint); transition: color 0.15s; }
+  .chrome-nav a.active, .chrome-nav a:hover { color: var(--ink); }
+  .chrome-cta {
+    font-family: var(--mono); font-size: 12px; padding: 8px 16px; border-radius: 100px;
+    border: 1px solid var(--border); text-decoration: none; color: var(--ink);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .chrome-cta:hover { border-color: var(--accent); color: var(--accent); }
+
+  .chrome-bottom .install-mini {
+    display: flex; align-items: center; gap: 10px; color: var(--ink-dim);
+    max-width: 100%; overflow-x: auto; white-space: nowrap;
+  }
+  .install-mini .prompt { color: var(--accent); }
+  .install-mini button {
+    background: none; border: none; color: var(--accent); font-family: var(--mono);
+    cursor: pointer; font-size: 11px; padding: 3px 7px; border-radius: 4px; border: 1px solid var(--border);
+  }
+  .install-mini button:hover { background: var(--accent-dim); }
+  .chrome-status { color: var(--ink-faint); display: none; }
+  @media (min-width: 860px) { .chrome-status { display: inline; } }
+  .chrome-links { display: flex; gap: 16px; }
+  .chrome-links a { text-decoration: none; color: var(--ink-faint); }
+  .chrome-links a:hover { color: var(--accent); }
+  @media (max-width: 640px) { .chrome-links { display: none; } }
+
+  .rail {
+    position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 10;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  @media (max-width: 720px) { .rail { display: none; } }
+  .rail a {
+    display: flex; align-items: center; gap: 10px; text-decoration: none;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-faint);
+    letter-spacing: 0.06em; justify-content: flex-end;
+  }
+  .rail a .tick { width: 14px; height: 1px; background: var(--ink-faint); transition: all 0.2s; }
+  .rail a .lbl { opacity: 0; transform: translateX(6px); transition: all 0.2s; }
+  .rail a:hover .lbl, .rail a.active .lbl { opacity: 1; transform: translateX(0); }
+  .rail a.active { color: var(--accent); }
+  .rail a.active .tick { width: 26px; background: var(--accent); }
+
+  /* ---------- scroll-scrubbed section transitions ---------- */
+  section, .close {
+    position: relative; z-index: 1; background: var(--bg);
+    will-change: transform, opacity, clip-path, filter;
+    opacity: var(--enter, 1);
+    transform: translateY(calc((1 - var(--enter, 1)) * 64px)) scale(calc(1 - var(--exit, 0) * 0.04));
+    clip-path: inset(calc((1 - var(--enter, 1)) * 100%) 0 calc(var(--exit, 0) * 100%) 0);
+    filter: brightness(calc(1 - var(--exit, 0) * 0.4)) blur(calc((1 - var(--enter, 1)) * 6px + var(--exit, 0) * 6px));
+  }
+  section {
+    padding: 128px 28px 96px;
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .inner { max-width: 900px; margin: 0 auto; width: 100%; }
+  @media (prefers-reduced-motion: reduce) {
+    section, .close { opacity: 1 !important; transform: none !important; filter: none !important; clip-path: none !important; }
+    html { scroll-behavior: auto; }
+  }
+
+  .corner { position: absolute; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+  .corner.tl { top: 88px; left: 28px; }
+  .corner.tr { top: 88px; right: 28px; text-align: right; }
+  @media (max-width: 640px) { .corner { display: none; } }
+
+  .mega {
+    font-size: clamp(3.4rem, 13vw, 10rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 0.86;
+    text-transform: uppercase;
+    margin: 0 0 36px;
+    transform: translateY(calc((1 - var(--enter, 1)) * 26px - var(--exit, 0) * 40px));
+  }
+
+  .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 32px; margin-bottom: 8px; }
+  .data-row { font-family: var(--mono); font-size: 13px; }
+  .data-row .label { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em; }
+  .data-row .value { color: var(--ink); font-weight: 700; margin-left: 8px; }
+
+  .lede { font-size: 18px; color: var(--ink-dim); max-width: 62ch; margin: 28px 0 0; }
+  .ctas { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 32px; }
+  .btn {
+    font-family: var(--mono); font-size: 14px; padding: 12px 20px; border-radius: 8px;
+    text-decoration: none; border: 1px solid var(--border); color: var(--ink); cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* PROBLEM — spec-sheet rows, not cards */
+  .spec { display: grid; grid-template-columns: 140px 1fr; gap: 8px 24px; padding: 26px 0; border-top: 1px solid var(--border); }
+  .spec:last-child { border-bottom: 1px solid var(--border); }
+  .spec .tag { font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: 0.06em; padding-top: 3px; }
+  .spec .quote { font-size: 20px; font-weight: 700; margin: 0 0 8px; text-wrap: balance; }
+  .spec .cost { color: var(--ink-dim); font-size: 15px; margin: 0; }
+
+  /* RULES */
+  .rule { display: grid; grid-template-columns: 56px 1fr; gap: 18px; padding: 22px 0; border-bottom: 1px solid var(--border); }
+  .rule:first-child { border-top: 1px solid var(--border); }
+  .rule .num { font-family: var(--mono); color: var(--accent); font-size: 14px; padding-top: 3px; }
+  .rule h3 { font-size: 17px; margin: 0 0 5px; font-weight: 700; }
+  .rule p { margin: 0; color: var(--ink-dim); font-size: 14px; }
+
+  /* EVIDENCE */
+  .ev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 8px; }
+  @media (max-width: 640px) { .ev-grid { grid-template-columns: 1fr; } }
+  .ev-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px; }
+  .ev-card.confirmed { border-color: var(--accent); background: var(--accent-dim); }
+  .ev-tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; display: inline-block; margin-bottom: 12px; }
+  .ev-card.confirmed .ev-tag { background: var(--accent); color: var(--accent-ink); }
+  .ev-card.hypothesis .ev-tag { background: var(--surface-2); color: var(--ink-dim); border: 1px dashed var(--ink-faint); }
+  .ev-card h3 { font-size: 16px; margin: 0 0 8px; }
+  .ev-card p { color: var(--ink-dim); font-size: 14px; margin: 0; }
+
+  /* ORIGIN */
+  .quote-lg { font-size: 22px; font-weight: 700; line-height: 1.5; text-wrap: balance; margin: 0; }
+  .quote-lg + p { color: var(--ink-dim); margin-top: 18px; font-size: 16px; max-width: 62ch; }
+
+  /* CLOSE */
+  .honest-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px 28px; margin-top: 8px; }
+  .honest-box p { color: var(--ink-dim); font-size: 15px; margin: 0 0 10px; }
+  .honest-box p:last-child { margin-bottom: 0; }
+  .close { padding: 128px 28px 220px; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+</style>
+
+<div class="chrome-top">
+  <span class="wordmark">HANDLE / ADHD</span>
+  <span class="chrome-desc">A behavior skill for Claude Code — built by one ADHD adult, shipped MIT.</span>
+  <nav class="chrome-nav">
+    <a href="#rules" data-jump="rules">Rules</a>
+    <a href="#evidence" data-jump="evidence">Evidence</a>
+    <a class="chrome-cta" href="https://github.com/lubianiec/handle-with-adhd" target="_blank" rel="noopener">GitHub ↗</a>
+  </nav>
+</div>
+
+<div class="chrome-bottom">
+  <div class="install-mini">
+    <span class="prompt">$</span> claude skill install handle-with-adhd
+    <button onclick="navigator.clipboard.writeText('claude skill install handle-with-adhd')">copy</button>
+  </div>
+  <span class="chrome-status">MIT · OPEN SOURCE</span>
+  <div class="chrome-links">
+    <a href="https://github.com/lubianiec/handle-with-adhd" target="_blank" rel="noopener">GITHUB</a>
+  </div>
+</div>
+
+<nav class="rail">
+  <a data-jump="hero" href="#hero"><span class="tick"></span><span class="lbl">HERO</span></a>
+  <a data-jump="problem" href="#problem"><span class="tick"></span><span class="lbl">PROBLEM</span></a>
+  <a data-jump="rules" href="#rules"><span class="tick"></span><span class="lbl">RULES</span></a>
+  <a data-jump="evidence" href="#evidence"><span class="tick"></span><span class="lbl">EVIDENCE</span></a>
+  <a data-jump="origin" href="#origin"><span class="tick"></span><span class="lbl">ORIGIN</span></a>
+  <a data-jump="close" href="#close"><span class="tick"></span><span class="lbl">CLOSE</span></a>
+</nav>
+
+<section id="hero" data-section="hero">
+  <span class="corner tl">Claude Code skill</span>
+  <span class="corner tr">Built by one person</span>
+  <div class="inner">
+    <h1 class="mega">Handle.</h1>
+    <div class="data-grid">
+      <div class="data-row"><span class="label">Type:</span><span class="value">Behavior skill</span></div>
+      <div class="data-row"><span class="label">License:</span><span class="value">MIT</span></div>
+      <div class="data-row"><span class="label">Built by:</span><span class="value">One ADHD adult</span></div>
+      <div class="data-row"><span class="label">Status:</span><span class="value">Shipped, in daily use</span></div>
+    </div>
+    <p class="lede">Not a chatbot personality. Not a productivity app. A behavior skill for Claude Code that changes how it paces work, reports results, and talks — because "I don't know what it's doing right now" is its own kind of exhausting.</p>
+    <div class="ctas">
+      <a class="btn primary" href="https://github.com/lubianiec/handle-with-adhd" target="_blank" rel="noopener">View on GitHub</a>
+      <a class="btn ghost" href="#rules">Read the 8 rules ↓</a>
+    </div>
+  </div>
+</section>
+
+<section id="problem" data-section="problem">
+  <span class="corner tl">Why this exists</span>
+  <span class="corner tr">Two failure modes</span>
+  <div class="inner">
+    <h2 class="mega">Exhausting.</h2>
+    <div class="spec">
+      <div class="tag">Symptom 01</div>
+      <div>
+        <p class="quote">"I never knew what it was actually doing."</p>
+        <p class="cost">Cost: background processes I hadn't asked about, tool calls piling up while I waited, half the codebase read before a one-line answer.</p>
+      </div>
+    </div>
+    <div class="spec">
+      <div class="tag">Symptom 02</div>
+      <div>
+        <p class="quote">"It kept asking me things I didn't have the energy to answer."</p>
+        <p class="cost">Cost: every "should I do X or Y?" is a small decision — and small decisions are the exact thing ADHD makes expensive.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wide" id="rules" data-section="rules">
+  <span class="corner tl">SKILL.md, verbatim</span>
+  <span class="corner tr">8 rules</span>
+  <div class="inner">
+    <h2 class="mega">Rules.</h2>
+    <div class="rule"><div class="num">§1</div><div class="body"><h3>Zero hidden cost</h3><p>No silent background work. If something runs in the background, say so in one line — what and why — before or as it starts.</p></div></div>
+    <div class="rule"><div class="num">§2</div><div class="body"><h3>Zero-friction execution</h3><p>"Just handle it" means handle it. Only asks back when the decision genuinely can't be guessed.</p></div></div>
+    <div class="rule"><div class="num">§3</div><div class="body"><h3>Recap without being asked</h3><p>Picks up where you left off, unprompted. No "how can I help today" — a quick "here's where we were" instead.</p></div></div>
+    <div class="rule"><div class="num">§4</div><div class="body"><h3>Capture memory continuously</h3><p>Nothing gets written down only "at the end." Sessions end abruptly sometimes — nothing should depend on reaching a tidy finish line first.</p></div></div>
+    <div class="rule"><div class="num">§5</div><div class="body"><h3>Braindump → concrete</h3><p>Messy input in, organized output out — what it means, why it matters, what to actually do. Never a pile of the same words handed back with bullets added.</p></div></div>
+    <div class="rule"><div class="num">§6</div><div class="body"><h3>No algorithmic sycophancy</h3><p>Agreeing to keep you engaged, or padding a correction to make it land easier, trades short-term comfort for a worse decision later.</p></div></div>
+    <div class="rule"><div class="num">§7</div><div class="body"><h3>Proof over promise</h3><p>"Done" is a claim, not evidence. It attaches the file path, the command output, the diff — the thing that makes it checkable without asking again.</p></div></div>
+    <div class="rule"><div class="num">§8</div><div class="body"><h3>Anchor to the goal when looping</h3><p>On the 3rd+ iteration of the same sub-task, it names the original goal and asks if continuing to iterate still serves it — instead of quietly generating attempt #4.</p></div></div>
+  </div>
+</section>
+
+<section id="evidence" data-section="evidence">
+  <span class="corner tl">Graded honestly</span>
+  <span class="corner tr">Not oversold</span>
+  <div class="inner">
+    <h2 class="mega">Graded.</h2>
+    <div class="ev-grid">
+      <div class="ev-card confirmed">
+        <div class="ev-tag">Evidence-backed</div>
+        <h3>No sycophancy (§6)</h3>
+        <p>Research on LLM sycophancy links it to eroded trust, emotional dependency, and worse mental-health outcomes over time. This one's backed, not a guess.</p>
+      </div>
+      <div class="ev-card hypothesis">
+        <div class="ev-tag">Hypothesis</div>
+        <h3>Proof over promise (§7)</h3>
+        <p>No study directly compares proof-attached claims to bare declarations. Kept as a reasoned practice — labeled as one, not dressed up as science.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="origin" data-section="origin">
+  <span class="corner tl">Origin</span>
+  <span class="corner tr">Not designed, distilled</span>
+  <div class="inner">
+    <h2 class="mega">Personal.</h2>
+    <p class="quote-lg">"I wrote down the rules that fixed both, for me. This is that file."</p>
+    <p>Distilled from a <code>~/.claude/CLAUDE.md</code> used for real, for months — not designed on a whiteboard. The niche of "AI agent skills for ADHD" on GitHub was nearly empty when this shipped.</p>
+  </div>
+</section>
+
+<div class="close" id="close" data-section="close">
+  <span class="corner tl">What this isn't</span>
+  <span class="corner tr">Said out loud</span>
+  <div class="inner">
+    <h2 class="mega">Honest.</h2>
+    <div class="honest-box">
+      <p>Not a clinical tool. Not a substitute for anything you and a doctor have worked out.</p>
+      <p>Not tested on anyone but its author. It might do nothing for you — ADHD doesn't work the same way twice.</p>
+      <p>Published because the thing that helped him doesn't seem to exist anywhere else yet — not because it's claimed to be universal.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const screens = Array.from(document.querySelectorAll('[data-section]'));
+  const railLinks = Array.from(document.querySelectorAll('.rail a'));
+  const navLinks = Array.from(document.querySelectorAll('.chrome-nav a[data-jump]'));
+  const VH = () => window.innerHeight;
+
+  function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+  function frame() {
+    const vh = VH();
+    const enterStart = vh * 0.9, enterEnd = vh * 0.45;
+    const exitSpan = vh * 0.6;
+    let current = screens[0];
+
+    for (const el of screens) {
+      const r = el.getBoundingClientRect();
+      const enter = reduceMotion ? 1 : clamp01((enterStart - r.top) / (enterStart - enterEnd));
+      const exit = reduceMotion ? 0 : clamp01(-r.top / exitSpan);
+      el.style.setProperty('--enter', enter.toFixed(3));
+      el.style.setProperty('--exit', exit.toFixed(3));
+      if (r.top <= vh / 2 && r.bottom >= vh / 2) current = el;
+    }
+
+    const name = current.dataset.section;
+    for (const a of railLinks) a.classList.toggle('active', a.dataset.jump === name);
+    for (const a of navLinks) a.classList.toggle('active', a.dataset.jump === name);
+
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    const pct = max > 0 ? (doc.scrollTop / max) * 100 : 0;
+    doc.style.setProperty('--progress', pct.toFixed(2));
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>
