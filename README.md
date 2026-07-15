@@ -57,6 +57,14 @@ optimizes for the former is a bad trade. So this skill deliberately doesn't:
 no engagement-maximizing agreement, and no "done" without something you can
 check. Boring and verifiable beats validating and vague.
 
+**Update after a deeper look:** the anti-sycophancy stance turned out to have
+real backing — research links LLM sycophancy to eroded trust, emotional
+dependency, and worse mental-health outcomes over time. The proof-over-promise
+rule didn't get the same confirmation — no study directly compares
+proof-attached claims to bare declarations. It stays in the skill as a
+reasoned practice, just labeled honestly: one rule is evidence-backed, the
+other is a good bet.
+
 ## What this isn't
 
 Not a clinical tool. Not a substitute for anything you and a doctor have

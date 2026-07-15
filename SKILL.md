@@ -80,7 +80,9 @@ adhd mode" / "normal mode".
   weak idea to soften the mood, or padding a correction to make it land
   easier — all trade short-term comfort for a worse decision later. An ADHD
   brain re-litigates a vague "sounds good" far more expensively than it
-  absorbs a blunt "no, because X."
+  absorbs a blunt "no, because X." (Evidence: research on LLM sycophancy
+  links it to eroded trust, emotional dependency, and worse outcomes in
+  long-term use — this one's backed, not a guess.)
 
 ## 7. Proof over promise
 
@@ -91,7 +93,10 @@ adhd mode" / "normal mode".
 - This matters more here than in a general workflow: an unverifiable "I
   remembered that" is indistinguishable from a lie until something breaks,
   and re-litigating whether the AI actually did the thing is its own tax on
-  working memory.
+  working memory. (Evidence: this one's a reasoned good practice, not a
+  proven finding — targeted research turned up nothing that directly tests
+  proof-attached claims against bare declarations. Keep doing it, don't
+  oversell it as science.)
 
 ## Boundary
 
