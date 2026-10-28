@@ -1,5 +1,7 @@
 # Handle with ADHD
 
+[![skills.sh](https://skills.sh/b/lubianiec/handle-with-adhd)](https://skills.sh/lubianiec/handle-with-adhd)
+
 ![Handle with ADHD](assets/banner.png)
 
 An AI assistant that tells you what it's doing, doesn't make you answer
@@ -8,8 +10,15 @@ I wrote it for myself and I've used it every day since July 2026.
 
 ## Install
 
-The skill is one file: `SKILL.md`, with standard frontmatter (`name`,
-`description`, `user-invocable`). Anything that reads skills reads it.
+**One command** — installs into whatever agent you use (Claude Code, Codex,
+Cursor, Hermes and ~75 more):
+
+```sh
+npx skills add lubianiec/handle-with-adhd
+```
+
+**Or by hand.** The skill is one file: `SKILL.md`, with standard frontmatter
+(`name`, `description`, `user-invocable`). Anything that reads skills reads it.
 
 **Claude Code**
 
